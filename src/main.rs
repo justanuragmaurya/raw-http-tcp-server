@@ -11,17 +11,18 @@ fn main(){
 
         let request = String::from_utf8_lossy(&buffer[..n]);
 
-        println!("{request}");
+        let mut request_iterator  = request.split("\r\n\r\n");
 
-        println!("{} {}",5,6);
+        let headers = request_iterator.next().unwrap();
+        let body = request_iterator.next().unwrap();
+        
+        println!("All the headers : \n{}" ,&headers);
+        println!("Body of the Request : \n{}" ,&body);
 
-        let res_body = "Hi take this response";
-
-        let response = format!("HTTP/1.1 200 OK\r\nContent-Length: {}\r\nContent-Type: text/plain\r\n\r\n{}",res_body.len(),&res_body);
+        let response = format!("HTTP/1.1 200 OK\r\nContent-Length: {}\r\nContent-Type: text/plain\r\n\r\n{}",body.len(),&body);
 
         stream.write(response.as_bytes()).unwrap();
         stream.flush().unwrap()
-
     }
 
 }
