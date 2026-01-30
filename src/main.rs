@@ -17,7 +17,7 @@ fn main(){
         let mut buffer = [0; 1024];
         let size = stream.read(&mut buffer).unwrap();
         
-        let req = parse_request(String::from_utf8_lossy(&buffer[..size]).to_string());
+        let req = parse_request(&String::from_utf8_lossy(&buffer[..size]).to_string());
 
         req_handler(&mut stream, &req);
 
@@ -26,30 +26,38 @@ fn main(){
 }
 
 fn req_handler(stream: &mut std::net::TcpStream , req:&Request){
-    let status:i32;
+    let mut status= String::new();
     
     let mut body = String::new();
 
     match (req.method.as_str() , req.path.as_str()) {
         ("GET","/")=>{
-            status = 200;
+            status.push_str("200 OK");
             body.push_str(format!("The request was sent by GET method to / with body \n{}",req.body).as_str());
         },
+        ("POST","/")=>{
+            status.push_str("200 OK");
+            body.push_str(format!("The request was sent by POST method to / with body \n{}",req.body).as_str());
+        },
+        ("GET","/health")=>{
+            status.push_str("200 OK");
+            body.push_str("OK");
+        },
         _=>{
-            status = 404;
+            status.push_str("400 Not found");
             println!("{} {} {:?}",req.version,req.body,req.headers);
         }
     }
 
     let response = format!("HTTP/1.1 {}\r\nContent-Length: {}\r\nContent-Type: text/plain\r\n\r\n{}",
-        status,body.as_bytes().len(),body
+        &status,&body.as_bytes().len(),&body
     );
 
     stream.write_all(response.as_bytes()).unwrap();
     stream.flush().unwrap();
 }
 
-fn parse_request(raw_req:String)->Request{
+fn parse_request(raw_req:&String)->Request{
     let mut sections = raw_req.split("\r\n\r\n");
 
     let header_section = sections.next().unwrap();
