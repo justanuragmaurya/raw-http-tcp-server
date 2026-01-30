@@ -14,11 +14,22 @@ fn main(){
 
     for stream in listener.incoming(){
         let mut stream = stream.unwrap();
-        let mut buffer = [0; 1024];
-        let size = stream.read(&mut buffer).unwrap();
-        
-        let req = parse_request(&String::from_utf8_lossy(&buffer[..size]).to_string());
 
+        let mut buffer = [0; 1024];
+        let mut request_data = Vec::new();
+
+        loop {
+            let n = stream.read(&mut buffer).unwrap();
+            if n == 0 {
+                break;
+            }
+            request_data.extend_from_slice(&buffer[..n]);
+            if request_data.windows(4).any(|w| w == b"\r\n\r\n") {
+                break;
+            }
+        }
+        
+        let req = parse_request(&String::from_utf8_lossy(&request_data).to_string());
         req_handler(&mut stream, &req);
 
         println!("{:?}",req);
@@ -57,7 +68,7 @@ fn req_handler(stream: &mut std::net::TcpStream , req:&Request){
     stream.flush().unwrap();
 }
 
-fn parse_request(raw_req:&String)->Request{
+fn parse_request(raw_req:&str)->Request{
     let mut sections = raw_req.split("\r\n\r\n");
 
     let header_section = sections.next().unwrap();
