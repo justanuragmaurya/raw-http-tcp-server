@@ -1,4 +1,4 @@
-use std::{collections::HashMap, fs::{self, File}, io::{Read, Write}, net::TcpListener, os::macos::raw::stat};
+use std::{collections::HashMap, fs::{self, File}, io::{Read, Write}, net::TcpListener};
 
 #[derive(Debug)]
 struct Request{
@@ -116,7 +116,7 @@ fn route_handler(method: &String , path:&String , body:&String)->String{
             match filename{
                 Some(filename)=>{
                     status.push_str("201 Created");
-                    let mut file = fs::File::create(filename).unwrap();
+                    let mut file = fs::File::create(format!("./files/{}",filename)).unwrap();
                     let content  = parsed_body.next().unwrap_or("");
                     file.write_all(content.as_bytes()).unwrap();
                     response_body.push_str(format!("Created file with name {}",&filename).as_str());
@@ -129,7 +129,7 @@ fn route_handler(method: &String , path:&String , body:&String)->String{
         },
         ("GET","/read")=>{
             let mut content = String::new();
-            let file = File::open(body.trim());
+            let file = File::open(format!("./files/{}",body.trim()));
             match file {
                 Ok(mut file)=>{
                     let read_req = file.read_to_string(&mut content);
