@@ -1,5 +1,6 @@
 use crate::types::*;
-use std::fs::{File};
+use std::ffi::OsStr;
+use std::fs::{self, File, ReadDir};
 use std::io::{Read, Write};
 
 pub fn route_handler(method: &String , path:&String , body:&String)->String{
@@ -106,6 +107,31 @@ pub fn route_handler(method: &String , path:&String , body:&String)->String{
                     status.push_str("500 Internal Server Error");
                     response_body.push_str("Wrong request format of body.");
                 }
+            }
+        }
+        ("GET","/files")=>{
+            let mut file_names = Vec::new();
+            let files = fs::read_dir("./files").unwrap();
+
+            for file in files{
+                let file = file.unwrap();
+                if file.path().is_file(){
+                    if let Some(file_name) = file.path().file_name().and_then(OsStr::to_str){
+                        file_names.push(String::from(file_name));
+                    }
+                }
+            }
+
+            if file_names.len()>0{
+                status.push_str("200 OK");
+                response_body.push_str("All the files :");
+                file_names.sort();
+                for filename in file_names{
+                    response_body.push_str(format!("\n{}",filename).as_str());
+                }
+            }else {
+                status.push_str("200 OK");
+                response_body.push_str("No files found");
             }
         }
         _=>{
