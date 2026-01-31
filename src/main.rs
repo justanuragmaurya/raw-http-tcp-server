@@ -1,4 +1,4 @@
-use std::{collections::HashMap, io::{Read, Write}, net::TcpListener};
+use std::{collections::HashMap, fs::{self, File}, io::{Read, Write}, net::TcpListener, os::macos::raw::stat};
 
 #[derive(Debug)]
 struct Request{
@@ -22,31 +22,7 @@ fn main(){
 }
 
 fn req_handler(stream: &mut std::net::TcpStream , req:&Request){
-    let mut status= String::new();
-    
-    let mut body = String::new();
-
-    match (req.method.as_str() , req.path.as_str()) {
-        ("GET","/")=>{
-            status.push_str("200 OK");
-            body.push_str(format!("The request was sent by GET method to / with body \n{}",req.body).as_str());
-        },
-        ("POST","/")=>{
-            status.push_str("200 OK");
-            body.push_str(format!("The request was sent by POST method to / with body \n{}",req.body).as_str());
-        },
-        ("GET","/health")=>{
-            status.push_str("200 OK");
-            body.push_str("OK");
-        },
-        _=>{
-            status.push_str("400 Not found");
-        }
-    }
-
-    let response = format!("HTTP/1.1 {}\r\nContent-Length: {}\r\nContent-Type: text/plain\r\n\r\n{}",
-        &status,&body.as_bytes().len(),&body
-    );
+    let response = route_handler(&req.method,&req.path,&req.body);
 
     stream.write_all(response.as_bytes()).unwrap();
     stream.flush().unwrap();
@@ -123,4 +99,65 @@ fn parse_headers(lines:&mut std::str::Lines)->HashMap<String,String>{
     }
       
     return headers;
+}
+
+fn route_handler(method: &String , path:&String , body:&String)->String{
+    let mut status = String::new();
+    let mut response_body= String::from("");
+    
+    match (method.as_str(),path.as_str()) {
+        ("GET","/")=>{
+            status.push_str("200 OK");
+            response_body.push_str("Hello welcome to File API");
+        },
+        ("POST","/create")=>{
+            let mut parsed_body = body.split(" : ");
+            let filename = parsed_body.next();
+            match filename{
+                Some(filename)=>{
+                    status.push_str("201 Created");
+                    let mut file = fs::File::create(filename).unwrap();
+                    let content  = parsed_body.next().unwrap_or("");
+                    file.write_all(content.as_bytes()).unwrap();
+                    response_body.push_str(format!("Created file with name {}",&filename).as_str());
+                },
+                None=>{
+                    status.push_str("400 Bad Request");
+                    response_body.push_str("Please enter a valid filename in valid format.");
+                }
+            }
+        },
+        ("GET","/read")=>{
+            let mut content = String::new();
+            let file = File::open(body.trim());
+            match file {
+                Ok(mut file)=>{
+                    let read_req = file.read_to_string(&mut content);
+                    match read_req {
+                        Ok(_) => {
+                            status.push_str("200 OK");
+                            response_body.push_str(format!("Content of file {} is :\n{}",body.trim(),&content).as_str());
+                        },
+                        Err(_) => {
+                            status.push_str("200 OK");
+                            response_body.push_str("Error reading from the file.\n please try again later");
+                        }
+                    }
+                }
+                Err(_)=>{
+                    status.push_str("400 Bad Request");
+                    response_body.push_str("Error opening the file , make sure you have create such a file.");
+                }
+            }
+        },
+        _=>{
+            status.push_str("404 Not found");
+        }
+    }
+
+    let response = format!("HTTP/1.1 {}\r\nContent-Length: {}\r\nContent-Type: text/plain\r\n\r\n{}",
+        &status,&response_body.as_bytes().len(),&response_body
+    );
+
+    return response;
 }
