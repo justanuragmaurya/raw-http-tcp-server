@@ -1,6 +1,6 @@
 use crate::types::*;
 use std::ffi::OsStr;
-use std::fs::{self, File, ReadDir};
+use std::fs::{self, File};
 use std::io::{Read, Write};
 
 pub fn route_handler(method: &String , path:&String , body:&String)->String{
