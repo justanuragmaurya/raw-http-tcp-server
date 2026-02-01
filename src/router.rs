@@ -23,7 +23,7 @@ pub fn route_handler(method: &String , path:&String , body:&String)->String{
                             match contentsize{
                                 Ok(_)=>{
                                     status.push_str("200 OK");
-                                    response_body.push_str(format!("File created with name :{}",json.filename).as_str());
+                                    response_body.push_str(format!("File created with name : {}",json.filename).as_str());
                                 },
                                 Err(_)=>{
                                     status.push_str("500 Internal Server Error");
@@ -139,7 +139,7 @@ pub fn route_handler(method: &String , path:&String , body:&String)->String{
         }
     }
 
-    let response = format!("HTTP/1.1 {}\r\nContent-Length: {}\r\nContent-Type: text/plain\r\n\r\n{}",
+    let response = format!("HTTP/1.1 {}\r\nContent-Length: {}\r\nContent-Type: text/plain\r\nAccess-Control-Allow-Origin: http://localhost:5173\r\nAccess-Control-Allow-Methods: GET, POST, PUT, OPTIONS\r\nAccess-Control-Allow-Headers: Content-Type\r\n\r\n{}",
         &status,&response_body.as_bytes().len(),&response_body
     );
 

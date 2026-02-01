@@ -15,6 +15,17 @@ fn main(){
 }
 
 fn req_handler(stream: &mut std::net::TcpStream , req:&Request){
+    if req.method == "OPTIONS" {
+        let response = format!(
+            "HTTP/1.1 204 No Content\r\n{}\r\n\r\n",
+            cors_headers()
+        );
+
+        stream.write_all(response.as_bytes()).unwrap();
+        stream.flush().unwrap();
+        return;
+    }
+
     let response = route_handler(&req.method,&req.path,&req.body);
 
     stream.write_all(response.as_bytes()).unwrap();
@@ -63,4 +74,13 @@ fn read_http_request(stream: &mut std::net::TcpStream) -> String {
     }
 
     String::from_utf8_lossy(&data).to_string()
+}
+
+fn cors_headers() -> String {
+    [
+        "Access-Control-Allow-Origin: http://localhost:5173",
+        "Access-Control-Allow-Methods: GET, POST, PUT, OPTIONS",
+        "Access-Control-Allow-Headers: Content-Type",
+    ]
+    .join("\r\n")
 }
